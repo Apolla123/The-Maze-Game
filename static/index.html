@@ -1,0 +1,836 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maze Runner</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    min-height: 100vh;
+    background: #0b1020;
+    color: #f1f5f9;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 25px;
+}
+
+.container {
+    width: 100%;
+    max-width: 1100px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.logo {
+    font-size: 27px;
+    font-weight: 800;
+}
+
+.logo span {
+    color: #818cf8;
+}
+
+.subtitle {
+    color: #94a3b8;
+    margin-top: 5px;
+    font-size: 13px;
+}
+
+.stats {
+    display: flex;
+    gap: 12px;
+}
+
+.stat {
+    background: #151d33;
+    border: 1px solid #26334f;
+    padding: 13px 20px;
+    border-radius: 13px;
+    min-width: 105px;
+}
+
+.stat-label {
+    color: #94a3b8;
+    font-size: 11px;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.game-card {
+    background: #151d33;
+    border: 1px solid #26334f;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 20px 60px #0005;
+}
+
+.game-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.status {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+.status strong {
+    color: #a5b4fc;
+}
+
+canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    background: #0b1020;
+    border-radius: 12px;
+    cursor: crosshair;
+    touch-action: none;
+}
+
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.hint {
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+button {
+    background: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover {
+    background: #818cf8;
+    transform: translateY(-2px);
+}
+
+button:active {
+    transform: scale(0.97);
+}
+
+.overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #050816dd;
+    backdrop-filter: blur(8px);
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    padding: 20px;
+}
+
+.overlay-content {
+    background: #151d33;
+    border: 1px solid #37446a;
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    max-width: 380px;
+    width: 100%;
+}
+
+.overlay-content h2 {
+    font-size: 28px;
+    margin-bottom: 12px;
+}
+
+.overlay-content p {
+    color: #94a3b8;
+    margin-bottom: 25px;
+    font-size: 14px;
+}
+
+.overlay-content button {
+    width: 100%;
+}
+
+@media(max-width: 600px) {
+    body {
+        padding: 12px;
+    }
+
+    .game-card {
+        padding: 10px;
+    }
+
+    .logo {
+        font-size: 22px;
+    }
+
+    .stat {
+        min-width: 85px;
+        padding: 10px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <div>
+            <div class="logo">MAZE<span>RUNNER.</span></div>
+            <div class="subtitle">Твоя задача выбраться, НЕ КАСАЯСЬ стен.</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">ВРЕМЯ</div>
+                <div class="stat-value" id="timer">00:00</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">ПОПЫТКИ</div>
+                <div class="stat-value" id="attempts">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-card">
+
+        <div class="game-top">
+            <div class="status">
+                СТАТУС: <strong id="gameStatus">Ожидание старта</strong>
+            </div>
+            <div class="status">Уровень: <strong>01</strong></div>
+        </div>
+
+        <canvas id="game" width="875" height="595"></canvas>
+
+        <div class="controls">
+            <div class="hint">
+                🟢 START — начало<br>
+                🔴 FINISH — финиш<br>
+                ⚠️ Касание стены возвращает на старт. Для начала подведи курсор к START.
+            </div>
+
+            <button onclick="newGame()">
+                ↻ Новый лабиринт
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<div class="overlay" id="overlay">
+    <div class="overlay-content">
+        <h2 id="resultTitle">Победа!</h2>
+        <p id="resultText">Ты прошёл лабиринт!</p>
+        <button onclick="newGame()">Играть снова</button>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const WIDTH = canvas.width;
+const HEIGHT = canvas.height;
+
+const ROWS = 17;
+const COLS = 25;
+const CELL = 35;
+
+const START = {
+    x: CELL / 2,
+    y: CELL / 2
+};
+
+const FINISH = {
+    x: (COLS - 0.5) * CELL,
+    y: (ROWS - 0.5) * CELL
+};
+
+const WALL_COLOR = "#64748b";
+const WALL_WIDTH = 5;
+const PLAYER_RADIUS = 7;
+
+let maze = [];
+let walls = [];
+
+let player = {...START};
+let lastPointer = null;
+
+let attempts = 0;
+let startTime = null;
+let timerInterval = null;
+
+let gameFinished = false;
+let gameStarted = false;
+
+let gameActive = false;
+let collisionActive = false;
+
+
+// =============================
+// Загрузка лабиринта
+// =============================
+
+async function newGame() {
+
+    clearInterval(timerInterval);
+
+    try {
+        const response = await fetch("/api/maze");
+
+        if (!response.ok) {
+            throw new Error("Не удалось получить лабиринт");
+        }
+
+        const data = await response.json();
+
+        if (
+            !Array.isArray(data.maze) ||
+            data.maze.length !== ROWS ||
+            data.maze.some(row =>
+                !Array.isArray(row) || row.length !== COLS
+            )
+        ) {
+            throw new Error(
+                "Сервер вернул некорректную структуру лабиринта"
+            );
+        }
+
+        maze = data.maze;
+
+        player = {...START};
+        lastPointer = null;
+
+        gameActive = false;
+        collisionActive = false;
+
+        attempts = 0;
+        startTime = null;
+
+        gameFinished = false;
+        gameStarted = false;
+
+        document.getElementById("attempts").textContent = 0;
+        document.getElementById("timer").textContent = "00:00";
+
+        document.getElementById("gameStatus").textContent =
+            "Подведи курсор к START";
+
+        document.getElementById("overlay").style.display = "none";
+
+        buildWalls();
+        draw();
+
+    } catch (error) {
+
+        console.error(error);
+
+        document.getElementById("gameStatus").textContent =
+            "Ошибка загрузки: " + error.message;
+
+        // Очищаем поле, чтобы не показывать старый лабиринт.
+        maze = [];
+        walls = [];
+        draw();
+    }
+}
+
+
+// =============================
+// Построение стен
+// =============================
+
+function buildWalls() {
+
+    walls = [];
+
+    for (let r = 0; r < ROWS; r++) {
+
+        for (let c = 0; c < COLS; c++) {
+
+            const x = c * CELL;
+            const y = r * CELL;
+
+            const cell = maze[r][c];
+
+            if (cell.top) {
+                walls.push({
+                    x1: x,
+                    y1: y,
+                    x2: x + CELL,
+                    y2: y
+                });
+            }
+
+            if (cell.right) {
+                walls.push({
+                    x1: x + CELL,
+                    y1: y,
+                    x2: x + CELL,
+                    y2: y + CELL
+                });
+            }
+
+            if (cell.bottom) {
+                walls.push({
+                    x1: x,
+                    y1: y + CELL,
+                    x2: x + CELL,
+                    y2: y + CELL
+                });
+            }
+
+            if (cell.left) {
+                walls.push({
+                    x1: x,
+                    y1: y,
+                    x2: x,
+                    y2: y + CELL
+                });
+            }
+        }
+    }
+}
+
+
+// =============================
+// Отрисовка
+// =============================
+
+function draw() {
+
+    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+    // Фон
+    ctx.fillStyle = "#0b1020";
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+    // Стены лабиринта
+    ctx.strokeStyle = WALL_COLOR;
+    ctx.lineWidth = WALL_WIDTH;
+    ctx.lineCap = "round";
+
+    ctx.beginPath();
+
+    for (const wall of walls) {
+
+        ctx.moveTo(wall.x1, wall.y1);
+        ctx.lineTo(wall.x2, wall.y2);
+    }
+
+    ctx.stroke();
+
+    // Старт
+    ctx.fillStyle = "#22c55e";
+
+    ctx.beginPath();
+    ctx.arc(
+        START.x,
+        START.y,
+        12,
+        0,
+        Math.PI * 2
+    );
+    ctx.fill();
+
+    ctx.fillStyle = "#86efac";
+
+    ctx.beginPath();
+    ctx.arc(
+        START.x,
+        START.y,
+        5,
+        0,
+        Math.PI * 2
+    );
+    ctx.fill();
+
+    // Финиш
+    ctx.fillStyle = "#ef4444";
+
+    ctx.beginPath();
+    ctx.arc(
+        FINISH.x,
+        FINISH.y,
+        13,
+        0,
+        Math.PI * 2
+    );
+    ctx.fill();
+
+    ctx.fillStyle = "#fecaca";
+
+    ctx.beginPath();
+    ctx.arc(
+        FINISH.x,
+        FINISH.y,
+        5,
+        0,
+        Math.PI * 2
+    );
+    ctx.fill();
+
+    // Игрок
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = "#818cf8";
+
+    ctx.fillStyle = "#a5b4fc";
+
+    ctx.beginPath();
+    ctx.arc(
+        player.x,
+        player.y,
+        PLAYER_RADIUS,
+        0,
+        Math.PI * 2
+    );
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+}
+
+
+// =============================
+// Расстояние до стены
+// =============================
+
+function distanceToWall(px, py, wall) {
+
+    const dx = wall.x2 - wall.x1;
+    const dy = wall.y2 - wall.y1;
+
+    const lengthSquared = dx * dx + dy * dy;
+
+    let t = (
+        (px - wall.x1) * dx +
+        (py - wall.y1) * dy
+    ) / lengthSquared;
+
+    t = Math.max(0, Math.min(1, t));
+
+    const nearestX = wall.x1 + t * dx;
+    const nearestY = wall.y1 + t * dy;
+
+    return Math.hypot(
+        px - nearestX,
+        py - nearestY
+    );
+}
+
+
+// =============================
+// Проверка столкновений
+// =============================
+
+function isCollision(x, y) {
+
+    const radius = 3;
+
+    // Проверка границ игрового поля
+    if (
+        x < radius ||
+        y < radius ||
+        x > WIDTH - radius ||
+        y > HEIGHT - radius
+    ) {
+        return true;
+    }
+
+    // Проверка всех стен
+    for (const wall of walls) {
+
+        if (
+            distanceToWall(x, y, wall) <=
+            radius + WALL_WIDTH / 2
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+// =============================
+// Проверка траектории курсора
+// =============================
+
+function checkPath(from, to) {
+
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+
+    const distance = Math.hypot(dx, dy);
+
+    const steps = Math.max(
+        1,
+        Math.ceil(distance)
+    );
+
+    for (let i = 0; i <= steps; i++) {
+
+        const t = i / steps;
+
+        const x = from.x + dx * t;
+        const y = from.y + dy * t;
+
+        if (isCollision(x, y)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+// =============================
+// Статус игры
+// =============================
+
+function updateStatus(message) {
+
+    document.getElementById("gameStatus").textContent =
+        message;
+}
+
+
+// =============================
+// Позиция курсора на canvas
+// =============================
+
+function getCanvasPosition(event) {
+
+    const rect = canvas.getBoundingClientRect();
+
+    return {
+        x: (event.clientX - rect.left) * WIDTH / rect.width,
+        y: (event.clientY - rect.top) * HEIGHT / rect.height
+    };
+}
+
+
+// =============================
+// Таймер
+// =============================
+
+function startTimer() {
+
+    if (startTime !== null) {
+        return;
+    }
+
+    startTime = Date.now();
+
+    clearInterval(timerInterval);
+
+    timerInterval = setInterval(() => {
+
+        if (startTime === null) {
+            return;
+        }
+
+        const seconds = Math.floor(
+            (Date.now() - startTime) / 1000
+        );
+
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+
+        document.getElementById("timer").textContent =
+            String(minutes).padStart(2, "0") +
+            ":" +
+            String(remainingSeconds).padStart(2, "0");
+
+    }, 1000);
+}
+
+
+// =============================
+// Столкновение со стеной
+// =============================
+
+function hitWall() {
+
+    if (!collisionActive) {
+
+        attempts++;
+
+        document.getElementById("attempts").textContent =
+            attempts;
+    }
+
+    collisionActive = true;
+
+    gameActive = false;
+
+    lastPointer = null;
+
+    player = {...START};
+
+    updateStatus("Возвращай курсор к START");
+
+    draw();
+}
+
+
+// =============================
+// Победа
+// =============================
+
+function win() {
+
+    if (gameFinished) {
+        return;
+    }
+
+    gameFinished = true;
+    gameActive = false;
+
+    clearInterval(timerInterval);
+
+    updateStatus("Лабиринт пройден!");
+
+    document.getElementById("resultTitle").textContent =
+        "Победа!";
+
+    document.getElementById("resultText").textContent =
+        "Ты прошёл лабиринт за " +
+        document.getElementById("timer").textContent +
+        ". Количество попыток: " + attempts;
+
+    document.getElementById("overlay").style.display =
+        "flex";
+}
+
+
+// =============================
+// Управление мышью
+// =============================
+
+canvas.addEventListener("mousemove", (event) => {
+
+    if (gameFinished || walls.length === 0) {
+        return;
+    }
+
+    const current = getCanvasPosition(event);
+
+    // Если игра ещё не началась,
+    // ждём, пока курсор окажется на старте.
+    if (!gameActive) {
+
+        const distanceFromStart = Math.hypot(
+            current.x - START.x,
+            current.y - START.y
+        );
+
+        if (distanceFromStart <= 18) {
+
+            gameActive = true;
+            collisionActive = false;
+
+            lastPointer = current;
+            player = current;
+
+            startTimer();
+
+            updateStatus("Игра началась!");
+
+            draw();
+        }
+
+        return;
+    }
+
+    // Проверяем весь путь курсора.
+    if (!checkPath(lastPointer, current)) {
+
+        hitWall();
+
+        return;
+    }
+
+    // Обновляем положение игрока.
+    lastPointer = current;
+    player = current;
+
+    draw();
+
+    // Проверяем достижение финиша.
+    const distanceToFinish = Math.hypot(
+        player.x - FINISH.x,
+        player.y - FINISH.y
+    );
+
+    if (distanceToFinish <= 16) {
+
+        win();
+    }
+});
+
+
+// =============================
+// Выход курсора за пределы поля
+// =============================
+
+canvas.addEventListener("mouseleave", () => {
+
+    if (gameFinished || !gameActive) {
+        return;
+    }
+
+    hitWall();
+});
+
+
+// =============================
+// Запуск игры
+// =============================
+
+newGame();
+
+</script>
+
+</body>
+</html>
